@@ -4,5 +4,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class NewsData(
-        val news: List<News>
+        val articles: List<Article> = emptyList(),
+        val infos: List<Info> = emptyList(),
+        val puzzlers: List<Puzzler> = emptyList()
 )
+
+fun NewsData.news() = articles + infos + puzzlers

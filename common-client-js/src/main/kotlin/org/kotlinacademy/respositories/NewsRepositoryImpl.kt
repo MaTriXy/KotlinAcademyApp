@@ -6,9 +6,7 @@ import org.kotlinacademy.httpGet
 import org.kotlinacademy.json
 
 class NewsRepositoryImpl : NewsRepository {
-    override suspend fun getNewsData(): NewsData {
-        val str = httpGet(Endpoints.news)
-        val parsed = json.parse<NewsData>(str)
-        return NewsData(parsed.news)
-    }
+
+    override suspend fun getNewsData(): NewsData =
+            json.parse(httpGet(Endpoints.news))
 }

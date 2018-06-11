@@ -1,22 +1,21 @@
 package org.kotlinacademy.presentation.news
 
 import org.kotlinacademy.common.launchUI
-import org.kotlinacademy.data.News
+import org.kotlinacademy.data.NewsData
+import org.kotlinacademy.data.news
 import org.kotlinacademy.presentation.BasePresenter
 import org.kotlinacademy.respositories.NewsRepository
-import org.kotlinacademy.usecases.PeriodicCaller
 
-class NewsPresenter(val view: NewsView) : BasePresenter() {
+class NewsPresenter(
+        private val view: NewsView,
+        private val newsRepository: NewsRepository
+) : BasePresenter() {
 
-    private val repository by NewsRepository.lazyGet()
-    private val periodicCaller by PeriodicCaller.lazyGet()
-
-    private var visibleNews: List<News>? = null
+    private var visibleNews: NewsData? = null
 
     override fun onCreate() {
         view.loading = true
         refreshList()
-        startPeriodicRefresh()
     }
 
     fun onRefresh() {
@@ -24,18 +23,20 @@ class NewsPresenter(val view: NewsView) : BasePresenter() {
         refreshList()
     }
 
-    private fun startPeriodicRefresh() {
-        jobs += periodicCaller.start(AUTO_REFRESH_TIME_MS, callback = this::refreshList)
+    fun cleanCache() {
+        visibleNews = null
     }
 
     private fun refreshList() {
         jobs += launchUI {
             try {
-                val news = repository.getNewsData()
-                        .news
-                        .sortedByDescending { it.occurrence }
-                if (news == visibleNews) return@launchUI
-                visibleNews = news
+                val newsData = newsRepository.getNewsData()
+                if (newsData == visibleNews) return@launchUI
+                visibleNews = newsData
+
+                val news = newsData.news()
+                        .sortedByDescending { it.dateTime }
+
                 view.showList(news)
             } catch (e: Throwable) {
                 view.showError(e)
@@ -44,9 +45,5 @@ class NewsPresenter(val view: NewsView) : BasePresenter() {
                 view.loading = false
             }
         }
-    }
-
-    companion object {
-        const val AUTO_REFRESH_TIME_MS = 60_000L
     }
 }

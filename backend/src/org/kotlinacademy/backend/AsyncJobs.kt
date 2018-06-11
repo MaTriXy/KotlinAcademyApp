@@ -4,22 +4,23 @@ import kotlinx.coroutines.experimental.CommonPool
 import kotlinx.coroutines.experimental.CoroutineScope
 import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
-import org.kotlinacademy.backend.repositories.db.DatabaseRepository
-import org.kotlinacademy.backend.repositories.email.EmailRepository
-import org.kotlinacademy.backend.repositories.network.MediumRepository
-import org.kotlinacademy.backend.repositories.network.NotificationsRepository
-import org.kotlinacademy.backend.usecases.syncWithMedium
+import org.kotlinacademy.backend.usecases.JobsUseCase
+import org.kotlinacademy.backend.usecases.MediumUseCase
+import org.kotlinacademy.backend.usecases.NewsUseCase
+import java.util.*
+import java.util.Calendar.*
 import java.util.concurrent.TimeUnit
 
 fun launchSyncJobs() {
-    val mediumRepository by MediumRepository.lazyGet()
-    val databaseRepository by DatabaseRepository.lazyGet()
-    val notificationsRepository by NotificationsRepository.lazyGet()
-    val emailRepository by EmailRepository.lazyGet()
-
     val interval = Config.mediumRefreshIntervalInMinutes ?: return
     launchEvery(interval, TimeUnit.MINUTES) {
-        syncWithMedium(mediumRepository, databaseRepository, notificationsRepository, emailRepository)
+        MediumUseCase.sync()
+    }
+    doAt(THURSDAY, hour = 17..17) {
+        MediumUseCase.proposePostWithLastWeekPuzzlers()
+    }
+    doAt(TUESDAY, THURSDAY, SATURDAY, hour = 12..15) {
+        JobsUseCase.fillDayWithPuzzler()
     }
 }
 
@@ -28,6 +29,18 @@ private fun launchEvery(interval: Long, unit: TimeUnit, block: suspend Coroutine
         while (true) {
             block()
             delay(interval, unit)
+        }
+    }
+}
+
+private fun doAt(vararg weekday: Int, hour: IntRange, block: suspend CoroutineScope.() -> Unit) {
+    launch(CommonPool) {
+        while (true) {
+            val now = getInstance(TimeZone.getTimeZone("Poland"))
+            if (now.get(DAY_OF_WEEK) in weekday && now.get(HOUR_OF_DAY) in hour) {
+                block()
+            }
+            delay(1, TimeUnit.HOURS)
         }
     }
 }

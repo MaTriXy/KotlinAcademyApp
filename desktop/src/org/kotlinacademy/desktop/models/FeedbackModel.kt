@@ -1,8 +1,8 @@
 package org.kotlinacademy.desktop.models
 
+import org.kotlinacademy.data.Article
 import org.kotlinacademy.data.Feedback
-import org.kotlinacademy.data.News
-import tornadofx.*
+import tornadofx.ItemViewModel
 
 class FeedbackModel : ItemViewModel<Feedback>() {
     val newsId = bind(Feedback::newsId)
@@ -23,7 +23,7 @@ class FeedbackModel : ItemViewModel<Feedback>() {
     }
 
     companion object {
-        fun forItem(news: News) = FeedbackModel().apply {
+        fun forItem(news: Article) = FeedbackModel().apply {
             newsId.value = news.id
         }
     }

@@ -9,6 +9,7 @@ import io.ktor.content.resources
 import io.ktor.content.static
 import io.ktor.features.CallLogging
 import io.ktor.features.ContentNegotiation
+import io.ktor.features.DefaultHeaders
 import io.ktor.features.StatusPages
 import io.ktor.gson.GsonConverter
 import io.ktor.http.ContentType
@@ -16,16 +17,22 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.response.respond
 import io.ktor.routing.Routing
 import io.ktor.util.error
+import org.kotlinacademy.Headers
 import org.kotlinacademy.backend.errors.MissingElementError
 import org.kotlinacademy.backend.errors.MissingParameterError
 import org.kotlinacademy.backend.errors.SecretInvalidError
+import org.kotlinacademy.backend.repositories.db.Database
 import org.kotlinacademy.gson
 
 fun Application.main() {
     application = this
     log.info("Production: ${Config.production}")
+    Database
 
     install(CallLogging)
+    install(DefaultHeaders) {
+        header(Headers.androidMobileMinVersion, "1.0.11")
+    }
     install(StatusPages) {
         exception<MissingParameterError> { cause ->
             call.respond(HttpStatusCode.BadRequest, "Missing parameter ${cause.name}")
@@ -45,6 +52,7 @@ fun Application.main() {
 
     install(ContentNegotiation) {
         register(ContentType.Application.Json, GsonConverter(gson))
+
     }
 
     install(Routing) {

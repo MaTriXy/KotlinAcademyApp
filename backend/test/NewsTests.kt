@@ -1,127 +1,211 @@
-import io.mockk.*
-import io.mockk.Ordering.SEQUENCE
+import io.mockk.Ordering
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.slot
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Test
-import org.kotlinacademy.backend.Config
-import org.kotlinacademy.backend.repositories.db.DatabaseRepository
-import org.kotlinacademy.backend.repositories.email.EmailRepository
-import org.kotlinacademy.backend.repositories.network.NotificationsRepository
-import org.kotlinacademy.backend.repositories.network.dto.NotificationResult
-import org.kotlinacademy.backend.usecases.addNews
-import org.kotlinacademy.backend.usecases.addOrUpdateNews
-import org.kotlinacademy.backend.usecases.deleteNews
-import org.kotlinacademy.backend.usecases.getAllNews
-import org.kotlinacademy.data.FirebaseTokenData
-import org.kotlinacademy.data.FirebaseTokenType
-import org.kotlinacademy.data.News
-import kotlin.test.assertEquals
+import org.kotlinacademy.backend.repositories.network.notifications.NotificationResult
+import org.kotlinacademy.backend.usecases.NewsUseCase
+import org.kotlinacademy.data.Article
+import org.kotlinacademy.data.Info
+import org.kotlinacademy.data.Puzzler
+import org.kotlinacademy.minus
+import org.kotlinacademy.now
+import kotlin.test.assertFalse
 
-class NewsTests {
+class NewsTests : UseCaseTest() {
 
     @Test
-    fun `addOrUpdateNews adds news if id is null`() = runBlocking {
-        val dbRepo = mockk<DatabaseRepository>(relaxed = true)
+    fun `addArticle sends notification`() = runBlocking {
+        coEvery { notificationsRepo.sendNotification(any(), any()) } returns NotificationResult(1, 0)
+        coEvery { tokenDbRepo.getAllTokens() } returns listOf(someFirebaseTokenData)
+
+        NewsUseCase.addArticle(someArticleData)
+
+        coVerify(ordering = Ordering.ALL) {
+            notificationsRepo.sendNotification(any(), any())
+        }
+    }
+
+    @Test
+    fun `getAcceptedNewsData returns all articles, accepted infos and puzzlers`() = runBlocking {
+        // Given
+        coEvery { articlesDbRepo.getArticles() } returns listOf(someArticle, someArticle2)
+        coEvery { infoDbRepo.getInfos() } returns listOf(someInfoAccepted, someInfoUnaccepted)
+        coEvery { puzzlersDbRepo.getPuzzlers() } returns listOf(somePuzzlerUnaccepted, somePuzzlerAccepted)
 
         // When
-        addOrUpdateNews(newNews, dbRepo, null, null)
+        val ret = NewsUseCase.getAcceptedNewsData()
 
         // Then
-        coVerify(ordering = SEQUENCE) {
-            dbRepo.addNews(newNews)
+        assert(ret.articles == listOf(someArticle, someArticle2))
+        assert(ret.infos == listOf(someInfoAccepted))
+        assert(ret.puzzlers == listOf(somePuzzlerAccepted))
+        coVerify(ordering = Ordering.UNORDERED) {
+            articlesDbRepo.getArticles()
+            infoDbRepo.getInfos()
+            puzzlersDbRepo.getPuzzlers()
         }
     }
 
     @Test
-    fun `addOrUpdateNews update news if id is null`() = runBlocking {
-        val dbRepo = mockk<DatabaseRepository>(relaxed = true)
+    fun `getPropositions returns unaccepted infos and puzzlers`() = runBlocking {
+        // Given
+        coEvery { articlesDbRepo.getArticles() } returns listOf(someArticle, someArticle2)
+        coEvery { infoDbRepo.getInfos() } returns listOf(someInfoAccepted, someInfoUnaccepted)
+        coEvery { puzzlersDbRepo.getPuzzlers() } returns listOf(somePuzzlerUnaccepted, somePuzzlerAccepted)
 
         // When
-        addOrUpdateNews(someNews, dbRepo, null, null)
+        val ret = NewsUseCase.getPropositions()
 
         // Then
-        coVerify(ordering = SEQUENCE) {
-            dbRepo.updateNews(someNews.id!!, someNews)
+        assert(ret.articles == listOf<Article>())
+        assert(ret.infos == listOf(someInfoUnaccepted))
+        assert(ret.puzzlers == listOf(somePuzzlerUnaccepted))
+        coVerify(ordering = Ordering.UNORDERED) {
+            infoDbRepo.getInfos()
+            puzzlersDbRepo.getPuzzlers()
         }
     }
 
     @Test
-    fun `addOrUpdateNews sends notification and email when new news was added`() = runBlocking {
-        // TODO Use function reference as extension when it will be supported for suspending function
-        `function sends notification and email when new news was added` { news, dbRepo, notificationsRepo, emailRepo ->
-            addOrUpdateNews(news, dbRepo, notificationsRepo, emailRepo)
-        }
-    }
-
-    @Test
-    fun `addNews sends notification and email when new news was added`() = runBlocking {
-        // TODO Use function reference as extension when it will be supported for suspending function
-        `function sends notification and email when new news was added` { news, dbRepo, notificationsRepo, emailRepo ->
-            addNews(news, dbRepo, notificationsRepo, emailRepo)
-        }
-    }
-
-    @Test
-    fun `addNews sends notification with url to KotlinAcademy Blog if news url is empty`() = runBlocking {
-        val dbRepo = mockk<DatabaseRepository>(relaxed = true)
-        coEvery { dbRepo.getAllTokens() } returns listOf(FirebaseTokenData("", FirebaseTokenType.Android))
-        val notificationsRepo = mockk<NotificationsRepository>(relaxed = true)
-        coEvery { notificationsRepo.sendNotification(any(), any(), any(), any(), any()) } returns NotificationResult(1, 0)
+    fun `When we propose info, it is added to database with acceptation false and email to admin`() = runBlocking {
+        // Given
+        coEvery { infoDbRepo.addInfo(someInfoData, false) } returns someInfoAccepted
 
         // When
-        addNews(newNews.copy(url = null), dbRepo, notificationsRepo, null)
+        NewsUseCase.propose(someInfoData)
 
         // Then
-        coVerify {
-            notificationsRepo.sendNotification(any(), any(), any(), "https://blog.kotlin-academy.com/", any())
+        coVerify(ordering = Ordering.SEQUENCE) {
+            infoDbRepo.addInfo(someInfoData, false)
+            emailRepo.sendHtmlEmail(adminEmail, any(), any())
         }
     }
 
     @Test
-    fun `deleteNews delete news from database`() = runBlocking {
-        val id = 1
-        val dbRepo = mockk<DatabaseRepository>(relaxed = true)
+    fun `When we propose puzzler, it is added to database with acceptation false`() = runBlocking {
+        // Given
+        coEvery { puzzlersDbRepo.addPuzzler(somePuzzlerData, false) } returns somePuzzlerAccepted
 
         // When
-        deleteNews(id, dbRepo)
+        NewsUseCase.propose(somePuzzlerData)
 
         // Then
-        coVerify {
-            dbRepo.deleteNews(id)
+        coVerify(ordering = Ordering.SEQUENCE) {
+            puzzlersDbRepo.addPuzzler(somePuzzlerData, false)
+        }
+        coVerify(inverse = true) {
+            emailRepo.sendHtmlEmail(adminEmail, any(), any())
         }
     }
 
     @Test
-    fun `getAllNews delete news from database`() = runBlocking {
-        val allNews = listOf(someNews, someNews2)
-        val dbRepo = mockk<DatabaseRepository>(relaxed = true)
-        coEvery { dbRepo.getNews() } returns allNews
+    fun `When we accept info, it is updated to acceptation true, and notifications to users are sent`() = runBlocking {
+        // Given
+        coEvery { infoDbRepo.getInfo(someInfoAccepted.id) } returns someInfoAccepted
+        coEvery { tokenDbRepo.getAllTokens() } returns listOf(someFirebaseTokenData)
+        coEvery { notificationsRepo.sendNotification(someFirebaseTokenData.token, any()) } returns someNotificationResult
 
         // When
-        val news = getAllNews(dbRepo)
+        NewsUseCase.acceptInfo(someInfoAccepted.id)
 
         // Then
-        assertEquals(allNews, news)
+        val infoSlot = slot<Info>()
+        coVerify(ordering = Ordering.SEQUENCE) {
+            infoDbRepo.getInfo(someInfoAccepted.id)
+            infoDbRepo.updateInfo(capture(infoSlot))
+            notificationsRepo.sendNotification(someFirebaseTokenData.token, any())
+        }
+        assert(infoSlot.captured.accepted)
     }
 
-    private fun `function sends notification and email when new news was added`(function: suspend (News, DatabaseRepository, NotificationsRepository?, EmailRepository?) -> Unit) = runBlocking {
-        objectMockk(Config).use {
-            every { Config.adminEmail } returns someEmail
-            val dbRepo = mockk<DatabaseRepository>(relaxed = true)
-            coEvery { dbRepo.getAllTokens() } returns listOf(FirebaseTokenData("", FirebaseTokenType.Android))
-            val emailRepo = mockk<EmailRepository>(relaxed = true)
-            val notificationsRepo = mockk<NotificationsRepository>(relaxed = true)
-            coEvery { notificationsRepo.sendNotification(any(), any(), any(), any(), any()) } returns NotificationResult(1, 0)
+    @Test
+    fun `When we accept puzzler, it is updated to acceptation true, but notifications are not sent`() = runBlocking {
+        // Given
+        coEvery { puzzlersDbRepo.getPuzzler(somePuzzlerUnaccepted.id) } returns somePuzzlerUnaccepted
 
-            // When
-            function(newNews, dbRepo, notificationsRepo, emailRepo)
+        // When
+        NewsUseCase.acceptPuzzler(somePuzzlerUnaccepted.id)
 
-            // Then
-            coVerify(ordering = SEQUENCE) {
-                dbRepo.addNews(newNews)
-                dbRepo.getAllTokens()
-                notificationsRepo.sendNotification(any(), any(), any(), any(), any())
-                emailRepo.sendEmail(any(), any(), any())
-            }
+        // Then
+        val puzzlerSlot = slot<Puzzler>()
+        coVerify(ordering = Ordering.SEQUENCE) {
+            puzzlersDbRepo.getPuzzler(somePuzzlerUnaccepted.id)
+            puzzlersDbRepo.updatePuzzler(capture(puzzlerSlot))
+        }
+        coVerify(inverse = true) {
+            notificationsRepo.sendNotification(someFirebaseTokenData.token, any())
+        }
+        assert(puzzlerSlot.captured.accepted)
+    }
+
+    @Test
+    fun `When we accept important puzzler, it is updated to acceptation true, and notifications are sent`() = runBlocking {
+        // Given
+        coEvery { puzzlersDbRepo.getPuzzler(somePuzzlerUnaccepted.id) } returns somePuzzlerUnaccepted
+        coEvery { tokenDbRepo.getAllTokens() } returns listOf(someFirebaseTokenData)
+        coEvery { notificationsRepo.sendNotification(someFirebaseTokenData.token, any()) } returns someNotificationResult
+
+        // When
+        NewsUseCase.acceptImportantPuzzler(somePuzzlerUnaccepted.id)
+
+        // Then
+        val puzzlerSlot = slot<Puzzler>()
+        coVerify(ordering = Ordering.ALL) {
+            puzzlersDbRepo.getPuzzler(somePuzzlerUnaccepted.id)
+            puzzlersDbRepo.updatePuzzler(capture(puzzlerSlot))
+            notificationsRepo.sendNotification(someFirebaseTokenData.token, any())
+        }
+        assert(puzzlerSlot.captured.accepted)
+    }
+
+    @Test
+    fun `When we move puzzler top, it's dateTime is changed be smaller then anyone in base`() = runBlocking {
+        // Given
+        val puzzlers = listOf(somePuzzlerUnaccepted, somePuzzlerAccepted, somePuzzlerAccepted2, somePuzzlerAccepted.copy(dateTime = now - 10000000))
+        coEvery { puzzlersDbRepo.getPuzzlers() } returns puzzlers
+        coEvery { puzzlersDbRepo.getPuzzler(somePuzzlerUnaccepted.id) } returns somePuzzlerUnaccepted
+
+        // When
+        NewsUseCase.movePuzzlerTop(somePuzzlerUnaccepted.id)
+
+        // Then
+        val puzzlerSlot = slot<Puzzler>()
+        coVerify(ordering = Ordering.SEQUENCE) {
+            puzzlersDbRepo.getPuzzlers()
+            puzzlersDbRepo.getPuzzler(somePuzzlerUnaccepted.id)
+            puzzlersDbRepo.updatePuzzler(capture(puzzlerSlot))
+        }
+        assert(puzzlerSlot.captured.dateTime < puzzlers.map { it.dateTime }.min()!!)
+
+        // And nothing else is updated
+        assert(puzzlerSlot.captured.accepted.not())
+        coVerify(inverse = true) {
+            notificationsRepo.sendNotification(any(), any())
+        }
+    }
+
+    @Test
+    fun `When we unpublish puzzler, it's just updated to not published`() = runBlocking {
+        // Given
+        coEvery { puzzlersDbRepo.getPuzzler(somePuzzlerAccepted.id) } returns somePuzzlerAccepted
+
+        // When
+        NewsUseCase.unpublishPuzzler(somePuzzlerAccepted.id)
+
+        // Then
+        val puzzlerSlot = slot<Puzzler>()
+        coVerify(ordering = Ordering.SEQUENCE) {
+            puzzlersDbRepo.getPuzzler(somePuzzlerAccepted.id)
+            puzzlersDbRepo.updatePuzzler(capture(puzzlerSlot))
+        }
+        assertFalse(puzzlerSlot.captured.accepted)
+
+        // And nothing else is updated
+        assert(puzzlerSlot.captured.accepted.not())
+        coVerify(inverse = true) {
+            notificationsRepo.sendNotification(any(), any())
         }
     }
 }

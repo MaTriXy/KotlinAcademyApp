@@ -4,11 +4,14 @@ dependencies {
     expectedBy project(':common-client')
     compile project(':common-jvm')
 
-    implementation dep.kotlin_stdlib_jre8
-    implementation dep.retrofit
+    implementation dep.kotlin_stdlib_jre7
+    compile dep.coroutines_jvm
+    compile dep.retrofit
 
+    testImplementation project(':common')
     testImplementation dep.junit
     testImplementation dep.kotlin_junit
+    testImplementation dep.mockk
 }
 
 apply from: '../jvmconfig.gradle'

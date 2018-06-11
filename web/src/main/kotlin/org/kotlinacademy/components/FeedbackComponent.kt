@@ -1,23 +1,21 @@
 package org.kotlinacademy.components
 
-import kotlinx.coroutines.experimental.launch
 import org.kotlinacademy.common.RouteResultProps
-import org.kotlinacademy.common.delay
+import org.kotlinacademy.data.Feedback
 import org.kotlinacademy.presentation.feedback.FeedbackPresenter
 import org.kotlinacademy.presentation.feedback.FeedbackView
-import org.kotlinacademy.views.commentFormView
-import org.kotlinacademy.views.errorView
-import org.kotlinacademy.views.loadingView
-import org.kotlinacademy.views.thankYouView
+import org.kotlinacademy.respositories.FeedbackRepositoryImpl
+import org.kotlinacademy.views.*
 import react.RBuilder
 import react.RProps
 import react.ReactElement
-import kotlin.browser.window
+import react.dom.h3
 import kotlin.properties.Delegates.observable
 
 class FeedbackComponent : BaseComponent<RouteResultProps<CommentProps>, CommentComponentState>(), FeedbackView {
 
-    private val presenter by presenter { FeedbackPresenter(this) }
+    private val feedbackRepository = FeedbackRepositoryImpl()
+    private val presenter by presenter { FeedbackPresenter(this, feedbackRepository) }
 
     override var loading: Boolean by observable(false) { _, _, n ->
         setState { state.loading = n }
@@ -27,23 +25,46 @@ class FeedbackComponent : BaseComponent<RouteResultProps<CommentProps>, CommentC
         state.loading == true -> loadingView()
         state.showThankYouPage == true -> thankYouView()
         state.error != null -> errorView(state.error!!)
-        else -> commentFormView(id = props.match.params.id?.toIntOrNull(), onSubmit = presenter::onSendCommentClicked)
-    }
+        else -> kaForm {
+            val id = props.match.params.id?.toIntOrNull()
+            val general = id == null
+            h3 { if (general) +"General comment" else +"Article comment" }
 
-    override fun backToNewsAndShowSuccess() {
-        launch {
-            setState { showThankYouPage = true }
-            delay(3_000)
-            window.location.replace("/")
+            textFieldView("Please, rate using a number between 0 and 10", number = true, value = state.rating) {
+                setState { rating = it }
+            }
+
+            val whatIsCommentAbout = if (general) "Kotlin Academy" else "this article"
+            textFieldView("What do you think about $whatIsCommentAbout?", value = state.comment){
+                setState { comment = it }
+            }
+
+            textFieldView("Can you give us some advice how to make it better?", value = state.suggestions){
+                setState { suggestions = it }
+            }
+
+            submitButton("Send", onClick = fun() {
+                val feedback = Feedback(id,
+                        rating = state.rating?.toIntOrNull() ?: return,
+                        comment = state.comment ?: "",
+                        suggestions = state.suggestions ?: ""
+                )
+                presenter.onSendCommentClicked(feedback)
+            })
         }
     }
 
-    override fun componentDidMount() {
-
+    override fun backToNewsAndShowSuccess() {
+        setState { showThankYouPage = true }
+        backAfterDelay(millis = 3_000)
     }
 }
 
 external interface CommentComponentState : BaseState {
+    var rating: String?
+    var comment: String?
+    var suggestions: String?
+
     var loading: Boolean?
     var showThankYouPage: Boolean?
 }

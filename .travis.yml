@@ -1,17 +1,51 @@
 language: android
 jdk: oraclejdk8
+android:
+ components:
+   - tools
+   - platform-tools
+   - build-tools-27.0.3
+   - android-27
+   - android-22
+   - extra-android-m2repository
+   - sys-img-armeabi-v7a-android-22
 
-jdk:
-  - oraclejdk8
+licenses:
+  - 'android-sdk-license-.+'
+  - 'android-sdk-preview-.+'
+  - '.*'
+
+before_cache:
+  - rm -f  $HOME/.gradle/caches/modules-2/modules-2.lock
+  - rm -fr $HOME/.gradle/caches/*/plugin-resolution/
+
+cache:
+  directories:
+    - $HOME/.m2/
+    - $HOME/.gradle/caches/
+    - $HOME/.gradle/wrapper/
+    - $HOME/.groovy/grapes/
+
+before_script:
+    - chmod +x ./travis_start_emulator.sh
+    - ./travis_start_emulator.sh
 
 env:
   matrix:
-    - TASK=:backend:test
-    - TASK=:common-client-jvm:test
-    - TASK=:common-client-js:test
+    - TASK=:backend:test ANDROID=false CL=false
+    - TASK=:common-client-jvm:test ANDROID=false CL=false
+    - TASK=:common-client-js:test ANDROID=false CL=false
+    - TASK=:web:run ANDROID=false CL=false
+    - TASK=:desktop:build ANDROID=false CL=false
+    - TASK=:android:mobile:connectedProdDebugAndroidTest ANDROID=true CL=false
+    - TASK=:android:mobile:assemble ANDROID=true CL=true
+    - TASK=:android:wear:assemble ANDROID=true CL=false
 
 script:
-  - ./gradlew -Dorg.gradle.project.INCLUDE_ANDROID=false ${TASK}
+  - ./gradlew -Dorg.gradle.project.INCLUDE_ANDROID=${ANDROID} ${TASK}
+
+after_success:
+  - test CL && sh deploy_crashlytics.sh
 
 branches:
   only:

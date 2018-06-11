@@ -10,7 +10,9 @@ object Config {
     private val secret
             = System.getenv("SERVER_SECRET").takeUnless { it.isNullOrBlank() } ?: "XXX"
 
-    val adminEmail = System.getenv("ADMIN_EMAIL").takeUnless { it.isNullOrBlank() }
+    var adminEmail = System.getenv("ADMIN_EMAIL").takeUnless { it.isNullOrBlank() }
+
+    val baseUrl = System.getenv("BASE_URL") ?: "http://localhost:8088/"
 
     val emailApiToken = System.getenv("SENDGRID_API_KEY").takeUnless { it.isNullOrBlank() }
 
@@ -19,7 +21,13 @@ object Config {
     val firebaseSecretApiKey: String?
             = System.getenv("SECRET_FIREBASE_KEY").takeUnless { it.isNullOrBlank() }
 
-    val mediumRefreshIntervalInMinutes = config?.config("medium")?.property("intervalInMinutes")?.getString()?.toLong()
+    val mediumRefreshIntervalInMinutes = config
+            ?.config("medium")
+            ?.property("intervalInMinutes")
+            ?.getString()
+            ?.toLong()
+
+    val mediumToken: String = System.getenv("MEDIUM_TOKEN_KEY") ?: ""
 
     private fun sha1(clearString: String) = try {
         val md = MessageDigest.getInstance("SHA-1")

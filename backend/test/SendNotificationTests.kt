@@ -2,55 +2,76 @@ import io.mockk.*
 import kotlinx.coroutines.experimental.runBlocking
 import org.junit.Test
 import org.kotlinacademy.backend.Config
-import org.kotlinacademy.backend.repositories.db.DatabaseRepository
-import org.kotlinacademy.backend.repositories.email.EmailRepository
-import org.kotlinacademy.backend.repositories.network.NotificationsRepository
-import org.kotlinacademy.backend.usecases.sendNotification
-import org.kotlinacademy.backend.usecases.sendNotifications
-import org.kotlinacademy.data.FirebaseTokenData
+import org.kotlinacademy.backend.repositories.network.notifications.NotificationData
+import org.kotlinacademy.backend.usecases.NotificationsUseCase
 import org.kotlinacademy.data.FirebaseTokenType
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-class SendNotificationTests {
+class SendNotificationTests : UseCaseTest() {
+
+    val body = "Some text"
+    val url = "Some url"
 
     @Test
-    fun `sendEmailWithInfoAboutFeedback sends notification with correct title, url, token and type`() = runBlocking {
-        val body = "Some text"
-        val url = "Some url"
+    fun `sendEmailWithInfoAboutFeedback sends Web notification with correct title, url, token and type`() = runBlocking {
         val token = "Some token"
         val type = FirebaseTokenType.Web
 
-        val notificationRepo = mockk<NotificationsRepository>(relaxed = true)
-        coEvery { notificationRepo.sendNotification(any(), any(), any(), any(), any()) } returns someNotificationResult
+        coEvery { notificationsRepo.sendNotification(any(), any()) } returns someNotificationResult
 
         // When
-        val result = sendNotification(body, url, FirebaseTokenData(token, type), notificationRepo)
+        val result = NotificationsUseCase.send(body, url, token, type)
 
         // Then
         assertEquals(someNotificationResult, result)
+        val slot = slot<NotificationData>()
         coVerify {
-            notificationRepo.sendNotification("Kotlin Academy", body, any(), url, token)
+            notificationsRepo.sendNotification(token, capture(slot))
         }
+        val notificationData = slot.captured
+        assertEquals("Kotlin Academy", notificationData.title)
+        assertEquals(body, notificationData.body)
+        assertEquals("img/logo.png", notificationData.icon)
+        assertEquals(url, notificationData.click_action)
+    }
+
+    @Test
+    fun `sendEmailWithInfoAboutFeedback sends Android notification with correct title, url, token and type`() = runBlocking {
+        val token = "Some token"
+        val type = FirebaseTokenType.Android
+
+        coEvery { notificationsRepo.sendNotification(any(), any()) } returns someNotificationResult
+
+        // When
+        val result = NotificationsUseCase.send(body, url, token, type)
+
+        // Then
+        assertEquals(someNotificationResult, result)
+        val slot = slot<NotificationData>()
+        coVerify {
+            notificationsRepo.sendNotification(token, capture(slot))
+        }
+        val notificationData = slot.captured
+        assertEquals("Kotlin Academy", notificationData.title)
+        assertEquals(body, notificationData.body)
+        assertEquals("icon_notification", notificationData.icon)
+        assertNull(notificationData.click_action)
     }
 
     @Test
     fun `sendNotifications sends notification to all tokens in database`() = runBlocking {
-        val body = "Some text"
-        val url = "Some url"
-
-        val dbRepo = mockk<DatabaseRepository>(relaxed = true)
-        val notificationRepo = mockk<NotificationsRepository>(relaxed = true)
-        coEvery { dbRepo.getAllTokens() } returns listOf(someFirebaseTokenData, someFirebaseTokenData2)
-        coEvery { notificationRepo.sendNotification(any(), any(), any(), any(), any()) } returns someNotificationResult
+        coEvery { tokenDbRepo.getAllTokens() } returns listOf(someFirebaseTokenData, someFirebaseTokenData2)
+        coEvery { notificationsRepo.sendNotification(any(), any()) } returns someNotificationResult
 
         // When
-        sendNotifications(body, url, dbRepo, notificationRepo)
+        NotificationsUseCase.sendToAll(body, url)
 
         // Then
         coVerify(ordering = Ordering.SEQUENCE) {
-            notificationRepo.sendNotification(any(), body, any(), url, someFirebaseTokenData.token)
-            notificationRepo.sendNotification(any(), body, any(), url, someFirebaseTokenData2.token)
+            notificationsRepo.sendNotification(someFirebaseTokenData.token, any())
+            notificationsRepo.sendNotification(someFirebaseTokenData2.token, any())
         }
     }
 
@@ -59,18 +80,15 @@ class SendNotificationTests {
         objectMockk(Config).use {
             every { Config.adminEmail } returns someEmail
 
-            val dbRepo = mockk<DatabaseRepository>(relaxed = true)
-            val notificationRepo = mockk<NotificationsRepository>(relaxed = true)
-            val emailRepo = mockk<EmailRepository>(relaxed = true)
-            coEvery { dbRepo.getAllTokens() } returns listOf(someFirebaseTokenData, someFirebaseTokenData2)
-            coEvery { notificationRepo.sendNotification(any(), any(), any(), any(), any()) } returnsMany listOf(someNotificationResult, someNotificationResult2)
+            coEvery { tokenDbRepo.getAllTokens() } returns listOf(someFirebaseTokenData, someFirebaseTokenData2)
+            coEvery { notificationsRepo.sendNotification(any(), any()) } returnsMany listOf(someNotificationResult, someNotificationResult2)
 
             // When
-            sendNotifications("Some text", "Some url", dbRepo, notificationRepo, emailRepo)
+            NotificationsUseCase.sendToAll("Some text", "Some url")
 
             // Then
             val messageSlot = CapturingSlot<String>()
-            coVerify { emailRepo.sendEmail(any(), any(), capture(messageSlot)) }
+            coVerify { emailRepo.sendHtmlEmail(any(), any(), capture(messageSlot)) }
             val message = messageSlot.captured
             assertTrue { (someNotificationResult.success + someNotificationResult2.success).toString() in message }
             assertTrue { (someNotificationResult.failure + someNotificationResult2.failure).toString() in message }
