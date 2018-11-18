@@ -1,7 +1,6 @@
-# KotlinAcademy application
+# KotAcademy application
 
-[![Build Status](https://travis-ci.org/MarcinMoskala/KotlinAcademyApp.svg?branch=master)](https://travis-ci.org/MarcinMoskala/KotlinAcademyApp)
-[![Waffle.io - Issues in progress](https://badge.waffle.io/MarcinMoskala/KotlinAcademyApp.png?label=in%20progress&title=In%20Progress)](http://waffle.io/MarcinMoskala/KotlinAcademyApp)
+[![Build Status](https://travis-ci.org/MarcinMoskala/KotAcademyPortal.svg?branch=master)](https://travis-ci.org/MarcinMoskala/KotAcademyPortal)
 [![codebeat badge](https://codebeat.co/badges/37d854ad-9a14-4d86-b3d1-9989e917aca7)](https://codebeat.co/projects/github-com-marcinmoskala-kotlinacademyapp-master)
 [![Analytics](https://ga-beacon.appspot.com/UA-92159206-10/main-page?pixel)](https://github.com/MarcinMoskala/PreferenceHolder)
 [![Analytics](https://ga-beacon.appspot.com/UA-92159206-7/main-page?pixel)](https://github.com/MarcinMoskala/PreferenceHolder)
@@ -24,11 +23,11 @@ It also allows giving the feedback this article or to Kotlin Academy.
 Here is the status of planned clients:
 * Android mobile - DONE ([Play](https://play.google.com/store/apps/details?id=org.kotlinacademy.mobile))
 * Web - DONE ([Demo](https://kotlin-academy.herokuapp.com/))
-* Desktop - DONE
-* Android Wear - Needs designing
+* Desktop - DONE in TornadoFX
+* Android Wear - DONE
+* iOS - DONE in Swift and Kotlin/Native
 * Firefox plugin - Not yet started
 * Chrome plugin - Not yet started
-* iOS - Not yet started
 
 We will really appreciate help in any of this areas. 
 
@@ -121,6 +120,14 @@ To clean all the previous images (needed when you are deleting some images) use 
 ```sbtshell
 ./gradlew cleanImages
 ```
+
+# Credits
+
+Special credits to below repositiries which inspired some solutions:
+
+https://github.com/Albert-Gao/kotlin-native-mobile-multiplatform-example/tree/master/platforms/ios
+
+https://bitbucket.org/ivan_vazhnov/mobius_multiplatform/src/9ec77bf4d274?at=master
 
 # License
 

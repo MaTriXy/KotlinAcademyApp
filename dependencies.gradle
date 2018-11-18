@@ -1,6 +1,6 @@
 ext {
     // Common
-    coroutines_version = '0.22.5'
+    coroutines_version = '0.24.0'
 
     // JVM
     retrofit_version = '2.3.0'
@@ -13,8 +13,9 @@ ext {
 
     // JS
     kotlinx_html_version = '0.6.9'
-    react_version = '0.0.3-kotlin-1.1.50-eap-18'
-    react_dom_version = '0.0.5-kotlin-1.1.50-eap-18'
+    react_version = '16.4.2-pre.38-kotlin-1.2.60'
+    react_dom_version = '16.4.2-pre.38-kotlin-1.2.60'
+    react_router_version = '4.3.1-pre.38-kotlin-1.2.60'
 
     // Backend
     squash_version = '0.2.3'
@@ -30,7 +31,7 @@ ext {
     glide_version = '3.7.0'
     firebase_version = '11.6.2'
     preference_holder_version = '1.51'
-    activitystarter_version = '1.02'
+    activitystarter_version = '1.12-beta-2'
     kotlinandroidviewbindings_version = '0.10'
     espresso_version = '3.0.1'
     kotlin_preferences_version = "1.51"
@@ -62,7 +63,8 @@ ext {
             kotlin_serializatoin_js    : "org.jetbrains.kotlinx:kotlinx-serialization-runtime-js:$serialization_version",
             kotlinx_html               : "org.jetbrains.kotlinx:kotlinx-html-js:$kotlinx_html_version",
             kotlin_react               : ["org.jetbrains:kotlin-react:$react_version",
-                                          "org.jetbrains:kotlin-react-dom:$react_dom_version"],
+                                          "org.jetbrains:kotlin-react-dom:$react_dom_version",
+                                          "org.jetbrains:kotlin-react-router-dom:$react_router_version"],
 
             // JVM
             coroutines_jvm             : "org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version",
@@ -97,9 +99,9 @@ ext {
                                           "com.google.firebase:firebase-messaging:$firebase_version"],
             glide                      : "com.github.bumptech.glide:glide:$glide_version",
             anko_coroutines            : "org.jetbrains.anko:anko-coroutines:$anko_version",
-            activitystarter_kotlin     : ["com.marcinmoskala.activitystarter:activitystarter:$activitystarter_version",
-                                          "com.marcinmoskala.activitystarter:activitystarter-kotlin:$activitystarter_version"],
-            activitystarter_compiler   : "com.marcinmoskala.activitystarter:activitystarter-compiler:$activitystarter_version",
+            activitystarter_kotlin     : ["com.github.MarcinMoskala.ActivityStarter:activitystarter:$activitystarter_version",
+                                          "com.github.MarcinMoskala.ActivityStarter:activitystarter-kotlin:$activitystarter_version"],
+            activitystarter_compiler   : "com.github.MarcinMoskala.ActivityStarter:activitystarter-compiler:$activitystarter_version",
             kotlinandroidviewbindings  : "com.github.MarcinMoskala:KotlinAndroidViewBindings:$kotlinandroidviewbindings_version",
             android_support            : ["com.android.support:design:$android_version",
                                           "com.android.support:appcompat-v7:$android_version",
@@ -119,6 +121,9 @@ ext {
             tornadofx                  : "no.tornado:tornadofx:$tornadofx_version",
             controlsfx                 : "org.controlsfx:controlsfx:$controlsfx_version",
             kotlin_coroutines_javafx   : "org.jetbrains.kotlinx:kotlinx-coroutines-javafx:$javafx_version",
-            tray_notifications         : "com.github.PlusHaze:TrayNotification:$tray_notification_version"
+            tray_notifications         : "com.github.PlusHaze:TrayNotification:$tray_notification_version",
+
+            // Native
+            coroutines_native            : "org.jetbrains.kotlinx:kotlinx-coroutines-core-native:$coroutines_version"
     ]
 }

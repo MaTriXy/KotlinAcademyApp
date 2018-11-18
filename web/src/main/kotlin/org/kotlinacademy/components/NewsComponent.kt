@@ -1,8 +1,8 @@
 package org.kotlinacademy.components
 
+import kotlinx.coroutines.experimental.DefaultDispatcher
 import org.kotlinacademy.common.applyCodeHighlighting
 import org.kotlinacademy.common.getUrlParam
-import org.kotlinacademy.common.materialButton
 import org.kotlinacademy.data.News
 import org.kotlinacademy.presentation.news.NewsPresenter
 import org.kotlinacademy.presentation.news.NewsView
@@ -12,29 +12,32 @@ import react.RBuilder
 import react.RProps
 import react.ReactElement
 import react.dom.div
-import kotlin.browser.*
+import react.setState
+import kotlin.browser.document
 import kotlin.properties.Delegates.observable
 
 class NewsComponent : BaseComponent<RProps, NewsComponentState>(), NewsView {
 
     private val newsRepository = NewsRepositoryImpl()
 
-    private val presenter by presenter { NewsPresenter(this, newsRepository) }
+    private val presenter by presenter { NewsPresenter(DefaultDispatcher, this, newsRepository) }
 
     override var loading: Boolean by observable(false) { _, _, n ->
-        setState { state.loading = n }
+        setState { loading = n }
     }
     override var refresh: Boolean by observable(false) { _, _, n ->
-        setState { state.loading = n }
+        setState { loading = n }
     }
 
-    override fun RBuilder.render(): ReactElement? = when {
-        state.loading != false -> loadingView()
-        state.error != null -> errorView(state.error!!)
-        else -> newsListView()
+    override fun RBuilder.render() {
+        when {
+            loading -> loadingView()
+            state.error != null -> errorView(state.error!!)
+            else -> newsListView()
+        }
     }
 
-    override fun componentDidUpdate(prevProps: RProps, prevState: NewsComponentState) {
+    override fun componentDidUpdate(prevProps: RProps, prevState: NewsComponentState, snapshot: Any) {
         jumpToTag()
         applyCodeHighlighting()
     }

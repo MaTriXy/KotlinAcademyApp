@@ -1,12 +1,12 @@
 package org.kotlinacademy.components
 
+import kotlinx.coroutines.experimental.delay
 import kotlinx.coroutines.experimental.launch
-import org.kotlinacademy.common.delay
 import org.kotlinacademy.common.goBack
 import org.kotlinacademy.presentation.BaseView
 import org.kotlinacademy.presentation.Presenter
 import react.RComponent
-import kotlin.browser.window
+import react.setState
 
 abstract class BaseComponent<P : react.RProps, S : BaseState> : RComponent<P, S>(), BaseView {
 

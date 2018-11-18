@@ -1,14 +1,19 @@
-rootProject.name = 'KotlinAcademy'
+enableFeaturePreview('GRADLE_METADATA') // Required by coroutines https://github.com/Kotlin/kotlinx.coroutines/blob/develop/native/README.md
+
+rootProject.name = 'KotAcademy'
 include 'web'
 include 'backend'
 include 'desktop'
 include 'common'
 include 'common-js'
 include 'common-jvm'
+include 'common-native'
 include 'common-client'
 include 'common-client-js'
 include 'common-client-jvm'
+include 'common-client-native'
 
 if (INCLUDE_ANDROID == "true") {
     include 'android', 'android:common', 'android:mobile', 'android:wear'
 }
+

@@ -2,7 +2,6 @@ package org.kotlinacademy.views
 
 import kotlinx.html.DIV
 import kotlinx.html.id
-import kotlinx.html.js.onClickFunction
 import org.kotlinacademy.DateTime
 import org.kotlinacademy.Endpoints
 import org.kotlinacademy.common.*
@@ -18,6 +17,7 @@ fun RBuilder.newsListView(news: List<News>): ReactElement? = div(classes = "list
             is Article -> articleCard(n)
             is Info -> infoCard(n)
             is Puzzler -> puzzlerCard(n)
+            is Snippet -> snippetCard(n)
         }
     }
 }
@@ -34,7 +34,7 @@ fun RDOMBuilder<DIV>.articleCard(article: Article) {
                     +article.subtitle
                 }
                 div(classes = "news-icons-list") {
-                    twitterShare("${article.title} by Kotlin Academy ${article.url.orEmpty()}")
+                    twitterShare("${article.title} by Kot. Academy ${article.url.orEmpty()}")
                     facebookShare(article.url)
                     commentIcon(article)
                     secretInUrl?.let { secret ->
@@ -60,7 +60,7 @@ fun RDOMBuilder<DIV>.puzzlerCard(puzzler: Puzzler) {
                 +puzzler.title
             }
             puzzler.level?.let { level ->
-                div {
+                div(classes = "padding-bottom") {
                     b { +"Level: " }
                     +level
                 }
@@ -74,7 +74,7 @@ fun RDOMBuilder<DIV>.puzzlerCard(puzzler: Puzzler) {
             h5(classes = "main-text bold space-top") {
                 +puzzler.actualQuestion
             }
-            div(classes = "main-text multiline") {
+            div(classes = "main-text multiline padding-bottom") {
                 +puzzler.answers
             }
 
@@ -110,13 +110,55 @@ fun RDOMBuilder<DIV>.puzzlerCard(puzzler: Puzzler) {
             authorDiv(puzzler.author, puzzler.authorUrl)
 
             div(classes = "news-icons-list") {
-                twitterShare("Puzzler \"${puzzler.title}\" on Kotlin Academy portal \n${puzzler.getTagUrl()}")
+                twitterShare("Puzzler \"${puzzler.title}\" on Kot. Academy portal \n${puzzler.getTagUrl()}")
                 facebookShare(puzzler.getTagUrl())
                 secretInUrl?.let { secret ->
                     a(href = "#/submit-puzzler?id=${puzzler.id}&${Endpoints.webSecretParam}=$secret") {
                         img(classes = "news-icon", src = "img/edit.png") {}
                     }
                     a(target = "_blank", href = "${Endpoints.puzzler}/${puzzler.id}/${Endpoints.unpublish}?${Endpoints.apiSecretKey}=$secret") {
+                        img(classes = "news-icon", src = "img/delete_icon.png") {}
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+
+fun RDOMBuilder<DIV>.snippetCard(snippet: Snippet) {
+    jumpTag(name = snippet.tag)
+    div(classes = "article-card") {
+        div(classes = "article-frame") {
+            snippet.title?.let { title ->
+                h3(classes = "article-title") {
+                    +title
+                }
+            }
+            pre {
+                code(classes = "kotlin") {
+                    +snippet.code
+                }
+            }
+            snippet.explanation?.let { explanation ->
+                div(classes = "answer space-top space-bottom hidden") {
+                    h5(classes = "main-text bold") {
+                        +"Explanation"
+                    }
+                    div(classes = "main-text multiline") {
+                        +explanation
+                    }
+                }
+            }
+
+            authorDiv(snippet.author, snippet.authorUrl)
+
+            div(classes = "news-icons-list") {
+                twitterShare("Puzzler \"${snippet.title}\" on Kot. Academy portal \n${snippet.getTagUrl()}")
+                facebookShare(snippet.getTagUrl())
+                secretInUrl?.let { secret ->
+                    a(target = "_blank", href = "${Endpoints.snippet}/${snippet.id}/${Endpoints.unpublish}?${Endpoints.apiSecretKey}=$secret") {
                         img(classes = "news-icon", src = "img/delete_icon.png") {}
                     }
                 }
@@ -136,9 +178,9 @@ fun RDOMBuilder<DIV>.infoCard(info: Info) {
                         +info.title
                     }
                 }
-                if (info.description.isNotBlank()) {
+                if (info.desc.isNotBlank()) {
                     div(classes = "main-text multiline") {
-                        +info.description
+                        +info.desc
                     }
                 }
                 if (info.sources.isNotBlank()) {
@@ -153,7 +195,7 @@ fun RDOMBuilder<DIV>.infoCard(info: Info) {
                 dateField(info.dateTime)
             }
             div(classes = "news-icons-list") {
-                twitterShare("News \"${info.title}\" on Kotlin Academy portal \n${info.getTagUrl()}")
+                twitterShare("News \"${info.title}\" on Kot. Academy portal \n${info.getTagUrl()}")
                 facebookShare(info.getTagUrl())
                 secretInUrl?.let { secret ->
                     a(href = "#/submit-info?id=${info.id}&secret=$secret") {
@@ -183,7 +225,7 @@ private fun RDOMBuilder<*>.cardImage(imageUrl: String) {
 
 private fun RDOMBuilder<DIV>.authorDiv(author: String?, authorUrl: String?) {
     author ?: return
-    div(classes = "main-text space-top") {
+    div(classes = "main-text space-top author") {
         +"Author: "
         if (authorUrl.isNullOrBlank()) {
             +author

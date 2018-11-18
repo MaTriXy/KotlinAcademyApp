@@ -13,7 +13,7 @@ class NewsPresenterUnitTest : BaseUnitTest() {
     fun `When onCreate, loads and displays list of news`() {
         val view = NewsView()
         val repo = newsRepository { someNewsData }
-        val presenter = NewsPresenter(view, repo)
+        val presenter = NewsPresenter(Unconfined, view, repo)
         // When
         presenter.onCreate()
         // Then
@@ -35,7 +35,7 @@ class NewsPresenterUnitTest : BaseUnitTest() {
             repositoryUsed = true
             someNewsData
         }
-        val presenter = NewsPresenter(view, repo)
+        val presenter = NewsPresenter(Unconfined, view, repo)
         assertFalse(view.loading)
         // When
         presenter.onCreate()
@@ -50,7 +50,7 @@ class NewsPresenterUnitTest : BaseUnitTest() {
     fun `When repository returns error, it is shown on view`() {
         val view = NewsView()
         val repo = newsRepository { throw someError }
-        val presenter = NewsPresenter(view, repo)
+        val presenter = NewsPresenter(Unconfined, view, repo)
         // When
         presenter.onCreate()
         // Then
@@ -64,7 +64,7 @@ class NewsPresenterUnitTest : BaseUnitTest() {
     fun `When repository returns an error, refresh displays another one`() {
         val view = NewsView()
         val repo = newsRepository { throw someError }
-        val presenter = NewsPresenter(view, repo)
+        val presenter = NewsPresenter(Unconfined, view, repo)
         // When
         presenter.onCreate()
         presenter.onRefresh()
@@ -88,7 +88,7 @@ class NewsPresenterUnitTest : BaseUnitTest() {
                 NewsData(someArticlesList2Sorted, emptyList(), emptyList())
             }
         }
-        val presenter = NewsPresenter(view, repo)
+        val presenter = NewsPresenter(Unconfined, view, repo)
         // When
         presenter.onCreate()
         presenter.onRefresh()
@@ -118,7 +118,7 @@ class NewsPresenterUnitTest : BaseUnitTest() {
             }
             someNewsData
         }
-        val presenter = NewsPresenter(view, repo)
+        val presenter = NewsPresenter(Unconfined, view, repo)
         // When
         presenter.onCreate()
         presenter.onRefresh()
@@ -131,14 +131,20 @@ class NewsPresenterUnitTest : BaseUnitTest() {
 
     @JsName("newsOrderTest")
     @Test
-    fun `News are displayed in occurrence order - from newest to oldest`() {
+    fun `News order test`() {
         val view = NewsView()
+        val someNewsData = NewsData(
+                articles = listOf(someArticle1, someArticle2),
+                infos = listOf(someInfo),
+                puzzlers = listOf(somePuzzler2, somePuzzler)
+        )
+        val correctOrder = listOf(someInfo, someArticle1, somePuzzler, someArticle2, somePuzzler2)
         val repo = newsRepository { someNewsData }
-        val presenter = NewsPresenter(view, repo)
+        val presenter = NewsPresenter(Unconfined, view, repo)
         // When
         presenter.onCreate()
         // Then
-        assertEquals(someNewsData.run { articles + infos + puzzlers }.sortedByDescending { it.dateTime }, view.newsData)
+        assertEquals(correctOrder, view.newsData)
         view.assertNoErrors()
     }
 
@@ -147,7 +153,7 @@ class NewsPresenterUnitTest : BaseUnitTest() {
     fun `When nothing changed, list is not called again`() {
         val view = NewsView()
         val repo = newsRepository { someNewsData }
-        val presenter = NewsPresenter(view, repo)
+        val presenter = NewsPresenter(Unconfined, view, repo)
         // When
         presenter.onCreate()
         presenter.onRefresh()
@@ -161,7 +167,7 @@ class NewsPresenterUnitTest : BaseUnitTest() {
     fun `After cache clean, the same data is displayed`() {
         val view = NewsView()
         val repo = newsRepository { someNewsData }
-        val presenter = NewsPresenter(view, repo)
+        val presenter = NewsPresenter(Unconfined, view, repo)
         // When
         presenter.onCreate()
         presenter.cleanCache()
@@ -193,7 +199,7 @@ class NewsPresenterUnitTest : BaseUnitTest() {
     fun checkNews(data: NewsData, result: List<News>) {
         val view = NewsView()
         val repo = newsRepository { data }
-        val presenter = NewsPresenter(view, repo)
+        val presenter = NewsPresenter(Unconfined, view, repo)
         // When
         presenter.onCreate()
         // Then

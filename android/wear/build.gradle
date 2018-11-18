@@ -8,7 +8,7 @@ android {
     buildToolsVersion "27.0.3"
 
     defaultConfig {
-        applicationId "org.kotlinacademy.wear"
+        applicationId "academy.kot.portal.wear"
         minSdkVersion 23
         targetSdkVersion 27
         versionCode 1
@@ -44,7 +44,7 @@ dependencies {
     implementation project(':android:common')
     implementation dep.activitystarter_kotlin
     implementation dep.wear
-    provided dep.p_wear
+    compileOnly dep.p_wear
     implementation dep.kotlinandroidviewbindings
     implementation dep.anko_coroutines
     kapt dep.activitystarter_compiler

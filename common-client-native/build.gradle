@@ -1,0 +1,35 @@
+buildscript {
+    repositories {
+        jcenter()
+        maven { url 'https://plugins.gradle.org/m2/' }
+        maven { url 'https://dl.bintray.com/jetbrains/kotlin-native-dependencies' }
+    }
+
+    dependencies {
+        classpath "org.jetbrains.kotlin:kotlin-native-gradle-plugin:$kotlin_native_version"
+    }
+
+}
+
+apply plugin: 'kotlin-platform-native'
+
+repositories {
+    jcenter()
+}
+
+sourceSets {
+    //noinspection GroovyAssignabilityCheck
+    main {
+        component {
+            baseName = "KotlinAcademyCommon"
+            target "ios_arm64", "ios_arm32", "ios_x64"
+            outputKinds = [FRAMEWORK]
+        }
+    }
+}
+
+dependencies {
+    expectedBy project(':common')
+    expectedBy project(':common-client')
+    implementation dep.coroutines_native
+}

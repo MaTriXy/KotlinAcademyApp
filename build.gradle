@@ -1,8 +1,17 @@
+plugins {
+    id "jmfayard.github.io.gradle-kotlin-dsl-libs" version "0.2.1"
+}
+
 allprojects {
+    def isRoot = it == it.rootProject
+    
     buildscript {
-        ext.kotlin_version = '1.2.21'
-        ext.serialization_version = '0.4.2'
+        ext.kotlin_version = '1.2.60'
+        ext.serialization_version = '0.6.1'
         ext.nodeVersion = '8.9.4'
+        ext.kotlin_native_version = "0.8.1"
+        
+        if (isRoot) return // avoid error "Cannot change dependencies of configuration ':classpath' after it has been resolved."
 
         repositories {
             maven { url 'http://dl.bintray.com/kotlin/kotlin-eap-1.2' }
@@ -12,6 +21,7 @@ allprojects {
             maven { url "http://dl.bintray.com/kotlin/kotlin-dev" }
             maven { url 'https://dl.bintray.com/kotlin/kotlin-eap' }
             maven { url 'https://maven.fabric.io/public' }
+            maven { url "https://dl.bintray.com/jetbrains/kotlin-native-dependencies" }
             jcenter()
             mavenCentral()
             mavenLocal()
@@ -19,14 +29,15 @@ allprojects {
         }
         dependencies {
             classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-            classpath "org.jetbrains.kotlin:kotlin-frontend-plugin:0.0.29"
+            classpath "org.jetbrains.kotlin:kotlin-native-gradle-plugin:$kotlin_native_version"
+            classpath "org.jetbrains.kotlin:kotlin-frontend-plugin:0.0.32"
             classpath "org.jetbrains.kotlinx:kotlinx-gradle-serialization-plugin:$serialization_version"
             classpath("org.jetbrains.kotlinx:kotlinx-coroutines-core:0.12")
             classpath 'com.google.gms:google-services:3.1.1'
-            classpath 'com.android.tools.build:gradle:3.1.1'
+            classpath 'com.android.tools.build:gradle:3.1.4'
             classpath 'com.moowork.gradle:gradle-node-plugin:1.2.0'
             classpath "com.github.jengelman.gradle.plugins:shadow:2.0.1"
-            classpath 'io.fabric.tools:gradle:1.25.3'
+            classpath 'io.fabric.tools:gradle:1.25.4'
         }
 
     }
@@ -38,9 +49,16 @@ allprojects {
         maven { url "http://dl.bintray.com/kotlin/kotlin-dev" }
         maven { url "http://dl.bintray.com/kotlinx/kotlinx" }
         maven { url "http://dl.bintray.com/hypnosphi/kotlin-wrappers" }
+        maven { url "http://dl.bintray.com/hypnosphi/kotlin-js-wrappers" }
+        maven { url "https://kotlin.bintray.com/kotlin-js-wrappers/" }
         mavenCentral()
-
         jcenter()
+    }
+    tasks.withType(Test) {
+        testLogging {
+            showStandardStreams = true
+            events "passed", "failed"
+        }
     }
 }
 

@@ -1,10 +1,12 @@
 package org.kotlinacademy.presentation.manager
 
-import org.kotlinacademy.common.launchUI
+import kotlinx.coroutines.experimental.launch
 import org.kotlinacademy.presentation.BasePresenter
 import org.kotlinacademy.respositories.ManagerRepository
+import kotlin.coroutines.experimental.CoroutineContext
 
 class ManagerPresenter(
+        private val uiContext: CoroutineContext,
         private val view: ManagerView,
         private val secret: String,
         private val repository: ManagerRepository
@@ -39,12 +41,20 @@ class ManagerPresenter(
         makeAction { repository.rejectPuzzler(id, secret) }
     }
 
+    fun acceptSnippet(id: Int) {
+        makeAction { repository.acceptSnippet(id, secret) }
+    }
+
+    fun rejectSnippet(id: Int) {
+        makeAction { repository.acceptSnippet(id, secret) }
+    }
+
     private fun showList() {
-        jobs += launchUI {
+        jobs += launch(uiContext) {
             try {
                 val news = repository
                         .getPropositions(secret)
-                        .run { infos + puzzlers }
+                        .run { infos + puzzlers + snippets }
                         .sortedBy { it.dateTime }
                 view.showList(news)
             } catch (e: Throwable) {
@@ -56,7 +66,7 @@ class ManagerPresenter(
     }
 
     private fun makeAction(action: suspend () -> Unit) {
-        launchUI {
+        launch(uiContext) {
             view.loading = true
             action()
             showList()
